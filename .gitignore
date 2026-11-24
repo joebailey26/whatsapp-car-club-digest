@@ -1,0 +1,10 @@
+node_modules/
+browser/node_modules/
+browser/dist/
+.wrangler/
+.wrangler-dry/
+.dev.vars
+*.log
+# Never commit browser profiles or exports
+chrome-profile/
+*.zip

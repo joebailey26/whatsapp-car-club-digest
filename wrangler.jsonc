@@ -1,0 +1,91 @@
+{
+  "$schema": "node_modules/wrangler/config-schema.json",
+  "name": "whatsapp-car-club-digest",
+  "main": "src/index.ts",
+  "compatibility_date": "2026-11-01",
+  "compatibility_flags": ["nodejs_compat"],
+  "observability": { "enabled": true },
+
+  // Phase 6: weekly run Sunday 09:00 Europe/London (two UTC crons; only the one that is
+  // 09:00 in London acts) and a daily watchdog. The weekly run also needs the schedule
+  // switched on in Durable Object storage (PUT /admin/api/schedule), approved 2026-11-24.
+  "triggers": { "crons": ["0 8 * * SUN", "0 9 * * SUN", "30 6 * * *"] },
+
+  "containers": [
+    {
+      "class_name": "BrowserController",
+      // Required for filesystem snapshots. Cannot be changed after creation.
+      "scheduling_policy": "durable_object",
+      "images": {
+        // Read at runtime as ctx.container.images.browser
+        "browser": { "dockerfile": "./browser/Dockerfile" }
+      }
+    }
+  ],
+
+  "durable_objects": {
+    "bindings": [{ "name": "CONTROLLER", "class_name": "BrowserController" }]
+  },
+  "migrations": [{ "tag": "v1", "new_sqlite_classes": ["BrowserController"] }],
+
+  // Private bucket for raw exports and digests. Lifecycle: exports/ 30 days, digests/ 90 days.
+  "r2_buckets": [{ "binding": "EXPORTS", "bucket_name": "whatsapp-digest" }],
+
+  // Structured metadata, dedup index and (Phase 4) events. No message bodies.
+  // Cloudflare Email Service (Email Sending beta; joebailey.xyz onboarded 2026-11-24).
+  // Locked to one sender and one recipient so a bug cannot email anyone else.
+  "send_email": [
+    { "name": "EMAIL", "allowed_sender_addresses": ["digest@joebailey.xyz"], "allowed_destination_addresses": ["joe@joebailey.xyz"] }
+  ],
+
+  // Workers AI (remote only; local dev also bills). Zero data retention per Cloudflare docs.
+  "ai": { "binding": "AI" },
+
+  "d1_databases": [
+    { "binding": "DB", "database_name": "whatsapp-digest", "database_id": "c72d3da6-28c7-4040-b394-17ecb1a4bf82", "migrations_dir": "migrations" }
+  ],
+
+  "vars": {
+    // Must equal browser/package.json "version". Bump both whenever the image
+    // changes: a snapshot taken on an older image cannot move to a new one.
+    "BROWSER_IMAGE_VERSION": "0.3.0",
+    // standard-2 = 1 vCPU, 6 GiB, 12 GB disk. standard-1 (1/2 vCPU) was CPU-starved:
+    // p90 117% CPU during pairing on 2026-11-23. Instance size does not affect snapshots.
+    "CONTAINER_INSTANCE": "standard-2",
+
+    // Cloudflare Access: Worker → Access tab ("All traffic", policy "WhatsApp digest admin").
+    // These are public identifiers, not secrets.
+    "ACCESS_TEAM_DOMAIN": "galexia.cloudflareaccess.com",
+    "ACCESS_AUD": "f9d0a76f8047c54a97d6a78fb768e596f733294aeb572724dd2a558c049d9ce7",
+    // Extra allowlist enforced by the Worker on top of the Access policy (comma separated).
+    "ADMIN_EMAILS": "joe@joebailey.xyz",
+
+    // Timeouts (milliseconds)
+    "PAIRING_TTL_MS": "600000",
+    "POST_AUTH_SETTLE_MS": "45000",
+    "RESTORE_SETTLE_MS": "90000",
+    "OP_DEADLINE_MS": "660000",
+
+    // Export transcript interpretation (Phase 3). Image 0.2.0 runs Chromium with
+    // locale en-US and TZ UTC, so exports read "[M/D/YY, h:mm:ss AM]" in UTC.
+    "EXPORT_TIMEZONE": "UTC",
+    "EXPORT_DATE_ORDER_HINT": "MDY",
+
+    // Phase 4: event extraction
+    "AI_MODEL": "@cf/openai/gpt-oss-120b",
+    // Hard caps per analysis run (cost control).
+    "AI_MAX_CHUNKS_PER_RUN": "40",
+    "AI_MAX_TOKENS_PER_RUN": "400000",
+
+    // Phase 5: digest delivery
+    "DIGEST_FROM": "digest@joebailey.xyz",
+    "DIGEST_TO": "joe@joebailey.xyz",
+
+    // Phase 6: operations
+    "ALERT_TO": "joe@joebailey.xyz",
+    "WORKER_URL": "https://whatsapp-car-club-digest.joebailey.workers.dev",
+    // Alert when AI tokens in a calendar month exceed this (cost control).
+    "AI_MONTHLY_TOKEN_ALERT": "2000000"
+    // Secret (wrangler secret put): PSEUDONYM_KEY, the HMAC key for phone-number author pseudonyms
+  }
+}

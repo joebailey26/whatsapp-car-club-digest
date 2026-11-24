@@ -1,0 +1,5 @@
+{
+  "extends": "./browser/tsconfig.json",
+  "compilerOptions": { "noEmit": true, "rootDir": ".", "types": ["node"] },
+  "include": ["browser/src", "tests/browser-*.test.ts"]
+}

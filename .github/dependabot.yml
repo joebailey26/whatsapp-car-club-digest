@@ -1,0 +1,27 @@
+version: 2
+
+updates:
+  - package-ecosystem: npm
+    directories: ["/", "/browser"]
+    schedule:
+      interval: weekly
+    # Patches come in one PR a week; minor and major updates get a PR each.
+    groups:
+      patch:
+        update-types:
+          - patch
+    ignore:
+      # Node's types follow the Node major in .nvmrc, so they're bumped by hand alongside it.
+      - dependency-name: '@types/node'
+        update-types: ['version-update:semver-major']
+    # Note: any change under /browser rebuilds the container image on the next deploy. Bump
+    # BROWSER_IMAGE_VERSION with it and re-pair WhatsApp (see "Updating the container image" in the README).
+
+  - package-ecosystem: github-actions
+    directory: /
+    schedule:
+      interval: weekly
+    groups:
+      actions:
+        patterns:
+          - '*'

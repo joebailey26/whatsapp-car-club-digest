@@ -1,0 +1,101 @@
+{
+  "version": 4,
+  "notes": "Verified 2026-11-23 (image 0.2.0). Export dialog: radio 1 = All messages (default), radio 2 = date range with native input[type=date] fields (export-start-date / export-end-date). Native date fields cannot be filled reliably with the 0.2.0 type step, so v2 exports All messages; date windowing happens in processing. No media option exists on web. v3: search input loses its aria-label once it contains text, so it is targeted as input[role=\"textbox\"]. v4 (2026-11-24): wait for the Export chat menu item before clicking (one timeout seen at export#2).",
+  "openChat": [
+    {
+      "op": "click",
+      "selector": "::-p-aria(Close)",
+      "timeoutMs": 3000,
+      "optional": true
+    },
+    {
+      "op": "type",
+      "selector": "input[role=\"textbox\"][type=\"text\"]",
+      "text": "{{groupName}}",
+      "clear": true
+    },
+    {
+      "op": "waitFor",
+      "selector": "#pane-side span[title=\"{{groupNameCss}}\"]",
+      "timeoutMs": 10000
+    },
+    {
+      "op": "click",
+      "selector": "#pane-side span[title=\"{{groupNameCss}}\"]",
+      "timeoutMs": 10000
+    },
+    {
+      "op": "waitFor",
+      "selector": "#main header",
+      "timeoutMs": 15000
+    },
+    {
+      "op": "sleep",
+      "ms": 3000
+    }
+  ],
+  "verifyChat": [
+    {
+      "op": "exists",
+      "selector": "[data-testid=\"conversation-info-header\"] ::-p-text({{groupName}})",
+      "as": "chat_header_title"
+    }
+  ],
+  "export": [
+    {
+      "op": "click",
+      "selector": "#main header ::-p-aria(Menu)",
+      "timeoutMs": 5000
+    },
+    {
+      "op": "sleep",
+      "ms": 1000
+    },
+    {
+      "op": "waitFor",
+      "selector": "::-p-aria(Export chat[role=\"menuitem\"])",
+      "timeoutMs": 10000
+    },
+    {
+      "op": "click",
+      "selector": "::-p-aria(Export chat[role=\"menuitem\"])",
+      "timeoutMs": 8000
+    },
+    {
+      "op": "waitFor",
+      "selector": "::-p-xpath(//h1[normalize-space(.)=\"Export chat\"])",
+      "timeoutMs": 10000
+    },
+    {
+      "op": "sleep",
+      "ms": 800
+    },
+    {
+      "op": "click",
+      "selector": "::-p-xpath((//input[@type=\"radio\"])[1]/ancestor::label[1])",
+      "timeoutMs": 5000
+    },
+    {
+      "op": "click",
+      "selector": "::-p-xpath(//button[normalize-space(.)=\"Export\"])",
+      "timeoutMs": 5000
+    },
+    {
+      "op": "expectDownload",
+      "timeoutMs": 150000
+    }
+  ],
+  "reset": [
+    {
+      "op": "click",
+      "selector": "::-p-xpath(//button[normalize-space(.)=\"Cancel\"])",
+      "timeoutMs": 2000,
+      "optional": true
+    },
+    {
+      "op": "press",
+      "key": "Escape",
+      "times": 3
+    }
+  ]
+}
