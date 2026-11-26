@@ -1,6 +1,8 @@
 node_modules/
 browser/node_modules/
 browser/dist/
+marketplace-browser/node_modules/
+marketplace-browser/dist/
 .wrangler/
 .wrangler-dry/
 .dev.vars

@@ -13,6 +13,8 @@ Failures send an alert email. Phases 1–5 have passed their gates. Phase 6's ga
 
 > **Account risk.** WhatsApp does not authorise arbitrary browser automation. Even once a week, automating WhatsApp Web could breach its terms or get the account restricted. Use only your own linked account, and stop at the first warning. Group members' messages are personal data, so tell the groups that a digest is being produced.
 
+> **Marketplace car leads (separate, not enabled).** The repo also contains an hourly Facebook Marketplace collector with fast email alerts, built as a separate Worker (`car-marketplace-alerts`) with its own container, snapshot and schedule. It shares only the D1 database (separate `market_*` tables) and never affects the WhatsApp digest. It is off until deployed, signed in, measured and approved: see [docs/marketplace.md](docs/marketplace.md).
+
 ## How it works
 
 ```
@@ -287,8 +289,12 @@ src/digest/                   Digest model (incl. For sale section), rendering, 
 src/ops/                      Weekly schedule slot logic, operational alerts
 browser/                      Container image: Xvfb + Chromium + Puppeteer, data-driven step driver,
                               redacted inspection, CDP download capture
+src/marketplace/              Marketplace collector Worker (separate deploy): controller, parsing, scoring, ingest,
+                              cost guard, optional AI triage, emails, admin
+marketplace-browser/          Marketplace container image (separate from browser/)
+wrangler.marketplace.jsonc    Marketplace Worker config
 migrations/                   D1 schema
-tests/                        Vitest unit tests (181) + fictional fixtures
+tests/                        Vitest unit tests + fictional fixtures
 docs/                         Phase results, verified selectors, verified export flow
 ```
 

@@ -1,5 +1,5 @@
 {
   "extends": "./browser/tsconfig.json",
   "compilerOptions": { "noEmit": true, "rootDir": ".", "types": ["node"] },
-  "include": ["browser/src", "tests/browser-*.test.ts"]
+  "include": ["browser/src", "marketplace-browser/src", "tests/browser-*.test.ts"]
 }
