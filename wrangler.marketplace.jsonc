@@ -1,0 +1,67 @@
+{
+  "$schema": "node_modules/wrangler/config-schema.json",
+  // Marketplace car-lead collector (issue #4). A SEPARATE Worker from the WhatsApp
+  // digest (wrangler.jsonc): its own Durable Object, container image, browser profile,
+  // snapshot, schedule, Access application and error state. Deploy with
+  //   pnpm run deploy:marketplace
+  // Deploying it never restarts the WhatsApp controller or changes its image.
+  "name": "car-marketplace-alerts",
+  "main": "src/marketplace/index.ts",
+  "compatibility_date": "2026-11-01",
+  "compatibility_flags": ["nodejs_compat"],
+  "observability": { "enabled": true },
+
+  // One hourly tick. It does nothing until collection is switched on in Durable Object
+  // storage (PUT /admin/api/schedule with acknowledgeRisk), and also drives the daily
+  // roundup and the 06:00 UK watchdog. Minute 7 avoids the top-of-the-hour rush.
+  "triggers": { "crons": ["7 * * * *"] },
+
+  "containers": [
+    {
+      "class_name": "MarketplaceController",
+      "scheduling_policy": "durable_object",
+      "images": {
+        // Read at runtime as ctx.container.images.market. Not the WhatsApp image.
+        "market": { "dockerfile": "./marketplace-browser/Dockerfile" }
+      }
+    }
+  ],
+
+  "durable_objects": {
+    "bindings": [{ "name": "MARKET_CONTROLLER", "class_name": "MarketplaceController" }]
+  },
+  "migrations": [{ "tag": "v1", "new_sqlite_classes": ["MarketplaceController"] }],
+
+  // Same D1 database as the digest, separate market_* tables (migrations/0004).
+  // Apply migrations once, from either config (they share migrations_dir).
+  "d1_databases": [
+    { "binding": "DB", "database_name": "whatsapp-digest", "database_id": "c72d3da6-28c7-4040-b394-17ecb1a4bf82", "migrations_dir": "migrations" }
+  ],
+
+  // Owner-only: locked to one sender and one recipient.
+  "send_email": [
+    { "name": "EMAIL", "allowed_sender_addresses": ["digest@joebailey.xyz"], "allowed_destination_addresses": ["joe@joebailey.xyz"] }
+  ],
+
+  // Optional borderline classification only (off by default in settings; budget-capped).
+  "ai": { "binding": "AI" },
+
+  "vars": {
+    // Must equal marketplace-browser/package.json "version". Bump both together.
+    "MARKET_IMAGE_VERSION": "0.1.0",
+    // Lean first: basic = 1/4 vCPU, 1 GiB, 4 GB. Memory bills on provisioned size, so this
+    // is what keeps hourly runs inside the shared free allowance. Measure before changing.
+    "MARKET_CONTAINER_INSTANCE": "basic",
+
+    // Cloudflare Access: this Worker needs its OWN Access application (Worker → Access tab).
+    // Admin fails closed (503 ACCESS_NOT_CONFIGURED) until ACCESS_AUD is set.
+    "ACCESS_TEAM_DOMAIN": "galexia.cloudflareaccess.com",
+    "ACCESS_AUD": "",
+    "ADMIN_EMAILS": "joe@joebailey.xyz",
+
+    "ALERT_FROM": "digest@joebailey.xyz",
+    "ALERT_TO": "joe@joebailey.xyz",
+    "WORKER_URL": "https://car-marketplace-alerts.joebailey.workers.dev",
+    "LOGIN_TTL_MS": "900000"
+  }
+}

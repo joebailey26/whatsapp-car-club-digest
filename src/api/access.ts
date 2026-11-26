@@ -6,6 +6,9 @@ import type { Env } from '../types/env';
  * request. Fails closed: if Access is not configured, admin is unavailable.
  */
 
+/** The vars access checks need; satisfied by both the WhatsApp and Marketplace Workers' env. */
+export type AccessEnv = Pick<Env, 'ACCESS_TEAM_DOMAIN' | 'ACCESS_AUD' | 'ADMIN_EMAILS' | 'DEV_ALLOW_UNAUTHENTICATED'>;
+
 export type AccessResult = { ok: true; email: string | null } | { ok: false; status: 401 | 403 | 503; code: string };
 
 const jwksCache = new Map<string, ReturnType<typeof createRemoteJWKSet>>();
@@ -18,7 +21,7 @@ export function normaliseTeamDomain(raw: string): string | null {
   return v.toLowerCase();
 }
 
-export function isLocalDevBypass(env: Env, url: URL): boolean {
+export function isLocalDevBypass(env: AccessEnv, url: URL): boolean {
   return env.DEV_ALLOW_UNAUTHENTICATED === 'true' && (url.hostname === 'localhost' || url.hostname === '127.0.0.1');
 }
 
@@ -31,7 +34,7 @@ export function emailAllowed(email: string | null, allowlist: string | undefined
   return email !== null && list.includes(email.toLowerCase());
 }
 
-export async function verifyAccess(request: Request, env: Env): Promise<AccessResult> {
+export async function verifyAccess(request: Request, env: AccessEnv): Promise<AccessResult> {
   const url = new URL(request.url);
   if (isLocalDevBypass(env, url)) return { ok: true, email: 'local-dev' };
 

@@ -32,6 +32,8 @@ jobs:
           cache-dependency-path: |
             pnpm-lock.yaml
             browser/pnpm-lock.yaml
+            marketplace-browser/pnpm-lock.yaml
       - run: pnpm install --frozen-lockfile
       - run: pnpm --dir browser install --frozen-lockfile
+      - run: pnpm --dir marketplace-browser install --frozen-lockfile
       - run: pnpm run ${{ matrix.check.script }}

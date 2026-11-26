@@ -1,0 +1,25 @@
+{
+  "name": "car-marketplace-browser",
+  "version": "0.1.0",
+  "private": true,
+  "license": "MIT",
+  "type": "module",
+  "description": "Chromium + Puppeteer control service for the Marketplace collector container. Separate from browser/ so the WhatsApp image and snapshot are never affected.",
+  "engines": {
+    "node": "^24.18.0",
+    "pnpm": "^10.11.1"
+  },
+  "scripts": {
+    "build": "tsc -p tsconfig.json",
+    "start": "node dist/index.js",
+    "typecheck": "tsc -p tsconfig.json --noEmit"
+  },
+  "dependencies": {
+    "puppeteer-core": "^25.18.1"
+  },
+  "devDependencies": {
+    "@types/node": "^24.19.2",
+    "typescript": "^6.0.3"
+  },
+  "packageManager": "pnpm@10.11.1"
+}
